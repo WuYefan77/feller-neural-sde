@@ -1,0 +1,13 @@
+data/
+__pycache__/
+*.pyc
+*.npy
+*.npz
+*.log
+*.aux
+*.out
+*.synctex.gz
+.vscode/
+.vs/
+numba-cache/
+__compilation_temp__/
