@@ -30,8 +30,6 @@ experiments/
   run_heatmap.py          Fig 3:  Global CV + rate phase diagram (25x18)
   run_robustness.py       Fig 11: Conductance perturbations (+/-50%)
 demo.py                   Minimal single-point simulation
-manuscript/               LaTeX source (main.tex + references.bib)
-data/                     Generated .npz outputs (not committed; create locally)
 ```
 
 ## Usage
