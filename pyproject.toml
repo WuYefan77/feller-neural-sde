@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "feller-neural-sde"
+version = "0.1.0"
+description = "Reusable simulation tools for bounded multiplicative noise in a five-dimensional neuronal model"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Yefan Wu" }]
+dependencies = [
+    "numpy>=1.24",
+    "numba>=0.58",
+    "scipy>=1.11",
+]
+
+[project.optional-dependencies]
+plots = ["matplotlib>=3.7"]
+test = ["pytest>=8.0"]
+
+[tool.setuptools.packages.find]
+include = ["feller_neural_sde*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
