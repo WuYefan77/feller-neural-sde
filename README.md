@@ -1,58 +1,90 @@
-# Feller Neural SDE: Bounded Multiplicative Noise in a 5D Cortical Pacemaker
+# Feller Neural SDE
 
-Companion code for the paper *"Noise-accelerated Kramers Escape and Coherence Resonance in a 5D Neural Manifold"* (under review, Physical Review E).
+Reusable Python components from the project
+[*Noise-Induced Transitions and Coherence Resonance in a 5D Conductance-Based Neuronal Model*](https://arxiv.org/abs/2605.04088).
+
+The repository implements selected public components of the numerical workflow: a five-dimensional conductance-based CA1 pyramidal-neuron model, bounded state-dependent noise on the slow M-current gate, burst statistics, restricted low-noise Arrhenius analysis and parameter-robustness experiments.
 
 ## Model
 
-A 5D Hodgkin-Huxley-type conductance-based model of a CA1 pyramidal neuron (Golomb et al., 2006) with state-dependent multiplicative noise on the slow M-type potassium gating variable:
+The slow M-current gating variable follows
 
-$$dz = \frac{z_\infty(V) - z}{\tau_z} dt + \sigma_z \sqrt{z(1-z)} dW_t$$
+$$
+dz = \frac{z_\infty(V)-z}{\tau_z}\,dt
+  + \sigma_z\sqrt{z(1-z)}\,dW_t.
+$$
 
-The multiplicative term $\sqrt{z(1-z)}$ enforces **Feller boundary conditions**: noise vanishes at the physical limits $z=0$ and $z=1$, preserving the biophysical probability domain $[0,1]$.
+The state-dependent diffusion vanishes at the physical boundaries. The implementation uses a full-truncation semi-implicit Euler scheme to control numerical boundary violations while retaining the geometry of the diffusion term.
 
-## Numerical Scheme
+The voltage and remaining gates form a Hodgkin–Huxley-type five-dimensional conductance model based on the CA1 pyramidal-neuron formulation of Golomb et al. (2006). Numba-compiled kernels support parallel Monte Carlo trials.
 
-Full-truncation semi-implicit Euler scheme (Lord et al., 2010; Higham, 2005) with:
-- Forward Euler for membrane potential $V$
-- Semi-implicit for all gating variables $\{h, n, b, z\}$
-- Full truncation on diffusion term, no artificial absorbing boundaries
-
-Accelerated with **Numba** (parallel `prange` for multi-trial simulations).
-
-## Repository Structure
-
-```
-src/
-  model.py                5D model, Feller/Gauss/Gauss-matched solvers, stats
-experiments/
-  run_knockout.py         Fig 12: Feller vs Gauss knockout (all 4 regimes)
-  run_kramers.py          Figs 4,8: Dense Arrhenius/Kramers analysis
-  run_heatmap.py          Fig 3:  Global CV + rate phase diagram (25x18)
-  run_robustness.py       Fig 11: Conductance perturbations (+/-50%)
-demo.py                   Minimal single-point simulation
-```
-
-## Usage
+## Installation
 
 ```bash
-pip install -r requirements.txt
-
-# Quick demo (single noise point)
-python demo.py
-
-# Full experiments (generate figures in data/)
-python experiments/run_knockout.py
-python experiments/run_kramers.py
-python experiments/run_heatmap.py
-python experiments/run_robustness.py
+git clone https://github.com/WuYefan77/feller-neural-sde.git
+cd feller-neural-sde
+python -m pip install -e .
 ```
 
-Typical runtime on modern CPU (~10 cores): ~15-20 minutes for full Kramers + heatmap experiments.
+## Python API
 
-## Key Finding
+```python
+import numpy as np
 
-Replacing Feller noise with unbounded Gaussian noise (clipped to [0,1]) **completely abolishes bursting** in all 4 dynamical regimes. This knockout demonstrates that the *geometry* of the boundary constraint, not merely the amplitude of fluctuations, is required for the noise-accelerated bursting mechanism.
+from feller_neural_sde import (
+    compute_batch_stats,
+    get_deterministic_steady_state,
+    simulate_feller,
+)
 
-## Contact
+rng = np.random.default_rng(42)
+dt = 0.01
+n_trials = 10
+n_steps = 100_000
+i_app = 0.39
 
-Yefan Wu, `wuyefan718@gmail.com`
+initial_state = get_deterministic_steady_state(i_app, dt=dt)
+noise = rng.normal(0.0, np.sqrt(dt), size=(n_trials, n_steps))
+voltage = simulate_feller(
+    initial_state,
+    noise,
+    dt,
+    sigma_z=0.01,
+    i_app=i_app,
+)
+cv, burst_rate = compute_batch_stats(
+    voltage,
+    dt,
+    burn_in_steps=10_000,
+)
+```
+
+Wiener increments are generated outside the solver, which makes random seeds and common-random-number comparisons explicit. Model perturbations such as `g_m` are passed as function arguments rather than mutable globals.
+
+## Included experiments
+
+```text
+experiments/
+├── run_heatmap.py       burst-rate and CV phase diagrams
+├── run_knockout.py      state-dependent versus Gaussian controls
+├── run_kramers.py       restricted low-noise Arrhenius-like fits
+└── run_robustness.py    M-current conductance sensitivity
+```
+
+Run the lightweight example with:
+
+```bash
+python demo.py
+```
+
+The experiment scripts save generated arrays and figures under `data/`, which is excluded from version control.
+
+## Numerical scope
+
+This public repository is a compact, reusable subset of the research code rather than a complete reproduction archive. It focuses on the numerical mechanisms needed to inspect the model and rerun the included analyses.
+
+The accompanying study reports model-specific coherence resonance, restricted Arrhenius-like scaling in a deep subthreshold regime, noise-accelerated firing under strong state-dependent noise and qualitative differences from clipped additive-Gaussian controls. See [arXiv:2605.04088](https://arxiv.org/abs/2605.04088) for the complete analysis and interpretation.
+
+## Author
+
+Yefan Wu, University of Sydney
