@@ -10,8 +10,7 @@ The repository implements selected public components of the numerical workflow: 
 The slow M-current gating variable follows
 
 $$
-dz = \frac{z_\infty(V)-z}{\tau_z}\,dt
-  + \sigma_z\sqrt{z(1-z)}\,dW_t.
+dz = \frac{z_\infty(V)-z}{\tau_z}\,dt + \sigma_z\sqrt{z(1-z)}\,dW_t.
 $$
 
 The state-dependent diffusion vanishes at the physical boundaries. The implementation uses a full-truncation semi-implicit Euler scheme to control numerical boundary violations while retaining the geometry of the diffusion term.
